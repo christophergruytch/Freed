@@ -1,53 +1,25 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { theme } from '../theme';   // Import the theme
 
 export default function HomeScreen() {
     const [streak, setStreak] = useState(7);
     const [daysFree, setDaysFree] = useState(14);
-    const [lastCheckInDate, setLastCheckInDate] = useState(new Date().toDateString());
 
     const handleCheckIn = () => {
-        const today = new Date().toDateString();
-
-        if (lastCheckInDate === today) {
-            Alert.alert("Already Checked In", "You've already checked in today. Come back tomorrow!");
-            return;
-        }
-
-        const newStreak = streak + 1;
-        setStreak(newStreak);
-        setLastCheckInDate(today);
-
-        Alert.alert(
-            "Well done!",
-            `You've added another day to your streak!\nCurrent streak: ${newStreak} days`,
-            [{ text: "Keep Going 💪", style: "default" }]
-        );
+        setStreak(streak + 1);
+        Alert.alert("Great job!", `Streak increased to ${streak + 1} days!`);
     };
 
     const handleRelapse = () => {
-        Alert.alert(
-            "It's okay",
-            "Getting caught in the trap happens.\n\nBe kind to yourself.\nTomorrow is a new chance to choose freedom.",
-            [
-                {
-                    text: "Reset Freedom Timer",
-                    onPress: () => {
-                        setDaysFree(0);
-                        Alert.alert("Timer Reset", "You've got this.");
-                    }
-                },
-                { text: "Cancel", style: "cancel" }
-            ]
-        );
+        Alert.alert("It's okay", "Tomorrow is a new chance to choose freedom.");
     };
 
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Welcome to Free'd</Text>
-            <Text style={styles.subtitle}>Built using Hope, for Hope.</Text>
+            <Text style={styles.subtitle}>Getting free from the trap, one day at a time.</Text>
 
-            {/* Metrics */}
             <View style={styles.metricsContainer}>
                 <View style={styles.metricBox}>
                     <Text style={styles.metricLabel}>Current Streak</Text>
@@ -62,7 +34,6 @@ export default function HomeScreen() {
                 </View>
             </View>
 
-            {/* Quick Actions */}
             <TouchableOpacity style={styles.checkinButton} onPress={handleCheckIn}>
                 <Text style={styles.buttonText}>✅ Check In Today</Text>
             </TouchableOpacity>
@@ -77,20 +48,19 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0f0f0f',
-        padding: 20,
+        backgroundColor: theme.colors.background,
+        padding: theme.spacing.padding,
         alignItems: 'center',
     },
     title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#ffffff',
+        ...theme.fonts.title,
+        color: theme.colors.text,
         textAlign: 'center',
         marginTop: 60,
     },
     subtitle: {
-        fontSize: 16,
-        color: '#aaaaaa',
+        ...theme.fonts.subtitle,
+        color: theme.colors.textSecondary,
         textAlign: 'center',
         marginVertical: 12,
     },
@@ -101,38 +71,38 @@ const styles = StyleSheet.create({
         marginVertical: 30,
     },
     metricBox: {
-        backgroundColor: '#1a1a1a',
+        backgroundColor: theme.colors.card,
         padding: 20,
-        borderRadius: 16,
+        borderRadius: theme.spacing.radius,
         width: '48%',
         alignItems: 'center',
     },
     metricLabel: {
-        color: '#888888',
+        color: theme.colors.textTertiary,
         fontSize: 14,
     },
     metricValue: {
-        color: '#ffffff',
+        color: theme.colors.text,
         fontSize: 42,
         fontWeight: 'bold',
         marginVertical: 8,
     },
     metricUnit: {
-        color: '#666666',
+        color: theme.colors.textTertiary,
         fontSize: 14,
     },
     checkinButton: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: theme.colors.primary,
         padding: 18,
-        borderRadius: 12,
+        borderRadius: theme.spacing.radius,
         width: '100%',
         alignItems: 'center',
         marginTop: 20,
     },
     relapseButton: {
-        backgroundColor: '#d32f2f',
+        backgroundColor: theme.colors.danger,
         padding: 16,
-        borderRadius: 12,
+        borderRadius: theme.spacing.radius,
         width: '100%',
         alignItems: 'center',
         marginTop: 12,
