@@ -1,6 +1,8 @@
-import React from 'react';
+// App.js
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import useStore from './store/useStore';
 
 import HomeScreen from './pages/HomeScreen';
 import CheckInScreen from './pages/CheckInScreen';
@@ -12,6 +14,13 @@ import EducationScreen from './pages/EducationScreen';
 const Tab = createBottomTabNavigator();
 
 export default function App() {
+  const loadAllData = useStore((state) => state.loadAllData);
+
+  // Load data once when app starts
+  useEffect(() => {
+    loadAllData();
+  }, []);
+
   return (
     <NavigationContainer>
       <Tab.Navigator

@@ -1,16 +1,39 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Switch, Alert } from 'react-native';
+import { theme } from '../theme';
 
-export default function SettingsScreen() {
+export default function SettingsScreen({
+    freedomStartDate,
+    setFreedomStartDate,
+    isFaithBased,
+    setIsFaithBased
+}) {
     const [nickname, setNickname] = useState('');
-    const [isFaithBased, setIsFaithBased] = useState(true);
 
     const saveNickname = () => {
         if (nickname.trim() === '') {
             Alert.alert("Nickname Required", "Please choose a nickname.");
             return;
         }
-        Alert.alert("Saved!", `Welcome, ${nickname}! Your data is now private to you.`);
+        Alert.alert("Saved!", `Welcome, ${nickname}!`);
+    };
+
+    const resetTimer = () => {
+        Alert.alert(
+            "Reset Freedom Timer",
+            "This will reset your current timer. Are you sure?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Reset Timer",
+                    style: "destructive",
+                    onPress: () => {
+                        setFreedomStartDate(null);
+                        Alert.alert("Timer Reset", "You can start a new freedom period anytime.");
+                    }
+                }
+            ]
+        );
     };
 
     return (
@@ -21,13 +44,19 @@ export default function SettingsScreen() {
 
             <TextInput
                 style={styles.input}
-                placeholder="Choose a nickname (e.g. john_doe)"
+                placeholder="Choose a nickname"
                 value={nickname}
                 onChangeText={setNickname}
             />
 
             <TouchableOpacity style={styles.saveButton} onPress={saveNickname}>
                 <Text style={styles.buttonText}>Save Nickname</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.sectionTitle}>Timer Controls</Text>
+
+            <TouchableOpacity style={styles.resetButton} onPress={resetTimer}>
+                <Text style={styles.resetButtonText}>Reset Freedom Timer</Text>
             </TouchableOpacity>
 
             <Text style={styles.sectionTitle}>Content Preferences</Text>
@@ -37,13 +66,9 @@ export default function SettingsScreen() {
                 <Switch
                     value={isFaithBased}
                     onValueChange={setIsFaithBased}
-                    trackColor={{ false: '#767577', true: '#4CAF50' }}
+                    trackColor={{ false: '#767577', true: theme.colors.primary }}
                 />
             </View>
-
-            <Text style={styles.infoText}>
-                This app is built to support both faith-based and neutral journeys.
-            </Text>
         </View>
     );
 }
@@ -51,33 +76,32 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0f0f0f',
-        padding: 20,
+        backgroundColor: theme.colors.background,
+        padding: theme.spacing.padding,
     },
     title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#ffffff',
+        ...theme.fonts.title,
+        color: theme.colors.text,
         marginTop: 50,
         marginBottom: 30,
     },
     sectionTitle: {
         fontSize: 20,
-        color: '#ffffff',
+        color: theme.colors.text,
         marginTop: 25,
         marginBottom: 12,
     },
     input: {
-        backgroundColor: '#1f1f1f',
-        color: '#ffffff',
+        backgroundColor: theme.colors.card,
+        color: theme.colors.text,
         padding: 15,
-        borderRadius: 12,
+        borderRadius: theme.spacing.radius,
         marginBottom: 15,
     },
     saveButton: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: theme.colors.primary,
         padding: 16,
-        borderRadius: 12,
+        borderRadius: theme.spacing.radius,
         alignItems: 'center',
         marginBottom: 30,
     },
@@ -85,23 +109,28 @@ const styles = StyleSheet.create({
         color: '#ffffff',
         fontWeight: 'bold',
     },
+    resetButton: {
+        backgroundColor: theme.colors.danger,
+        padding: 16,
+        borderRadius: theme.spacing.radius,
+        alignItems: 'center',
+        marginBottom: 30,
+    },
+    resetButtonText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+    },
     toggleRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: '#1a1a1a',
+        backgroundColor: theme.colors.card,
         padding: 15,
-        borderRadius: 12,
+        borderRadius: theme.spacing.radius,
         marginBottom: 15,
     },
     toggleLabel: {
-        color: '#ffffff',
+        color: theme.colors.text,
         fontSize: 16,
-    },
-    infoText: {
-        color: '#aaaaaa',
-        textAlign: 'center',
-        marginTop: 30,
-        fontSize: 14,
     },
 });

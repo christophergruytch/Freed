@@ -1,159 +1,192 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { theme } from '../theme';
 
-export default function JournalScreen() {
-    const [entries, setEntries] = useState([]);
+export default function JournalScreen({ relapseHistory = [] }) {
+
+    const [activeTab, setActiveTab] = useState('journal');
+    const [journalEntries, setJournalEntries] = useState([]);
     const [newEntry, setNewEntry] = useState('');
+    const [editingIndex, setEditingIndex] = useState(null);
+    const [editText, setEditText] = useState('');
 
-    const addEntry = () => {
-        if (newEntry.trim() === '') {
-            Alert.alert("Empty Entry", "Please write something before saving.");
-            return;
-        }
+    // Load journal entries
+    useEffect(() => {
+        const loadJournal = async () => {
+            try {
+                const savedJournal = await AsyncStorage.getItem('journalEntries');
+                if (savedJournal) {
+                    setJournalEntries(JSON.parse(savedJournal));
+                }
+            } catch (e) {
+                console.log("Failed to load journal");
+            }
+        };
+        loadJournal();
+    }, []);
 
+    // Save journal entries
+    useEffect(() => {
+        AsyncStorage.setItem('journalEntries', JSON.stringify(journalEntries));
+    }, [journalEntries]);
+
+    const addJournalEntry = () => {
+        if (newEntry.trim() === '') return;
         const entry = {
             id: Date.now().toString(),
             date: new Date().toLocaleDateString(),
             text: newEntry.trim()
         };
-
-        setEntries([entry, ...entries]); // Add to top
+        setJournalEntries([entry, ...journalEntries]);
         setNewEntry('');
-
-        Alert.alert("Entry Saved", "Your thoughts have been recorded.");
+        Alert.alert("Saved", "Journal entry recorded.");
     };
 
-    const deleteEntry = (id) => {
-        Alert.alert(
-            "Delete Entry",
-            "Are you sure?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: () => setEntries(entries.filter(entry => entry.id !== id))
-                }
-            ]
-        );
+    const startEditing = (index) => {
+        setEditingIndex(index);
+        setEditText(journalEntries[index].text);
+    };
+
+    const saveEdit = () => {
+        if (editText.trim() === '') return;
+        const updatedEntries = [...journalEntries];
+        updatedEntries[editingIndex] = {
+            ...updatedEntries[editingIndex],
+            text: editText.trim(),
+            date: new Date().toLocaleDateString()
+        };
+        setJournalEntries(updatedEntries);
+        setEditingIndex(null);
+        setEditText('');
+        Alert.alert("Updated", "Journal entry has been updated.");
+    };
+
+    const deleteJournalEntry = (id) => {
+        setJournalEntries(journalEntries.filter(e => e.id !== id));
     };
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>📓 Journal</Text>
-            <Text style={styles.subtitle}>Write what's on your mind</Text>
+            <Text style={styles.title}>📓 My Journal</Text>
 
-            {/* New Entry Input */}
-            <TextInput
-                style={styles.input}
-                placeholder="What's on your mind today?"
-                value={newEntry}
-                onChangeText={setNewEntry}
-                multiline
-            />
+            <View style={styles.tabContainer}>
+                <TouchableOpacity
+                    style={[styles.tabButton, activeTab === 'journal' && styles.activeTab]}
+                    onPress={() => setActiveTab('journal')}
+                >
+                    <Text style={activeTab === 'journal' ? styles.activeTabText : styles.tabText}>Journal Entries</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tabButton, activeTab === 'relapse' && styles.activeTab]}
+                    onPress={() => setActiveTab('relapse')}
+                >
+                    <Text style={activeTab === 'relapse' ? styles.activeTabText : styles.tabText}>Relapse History</Text>
+                </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity style={styles.saveButton} onPress={addEntry}>
-                <Text style={styles.saveButtonText}>💾 Save Entry</Text>
-            </TouchableOpacity>
+            {activeTab === 'journal' ? (
+                <View style={styles.content}>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="What's on your mind today?"
+                        value={newEntry}
+                        onChangeText={setNewEntry}
+                        multiline
+                    />
+                    <TouchableOpacity style={styles.saveButton} onPress={addJournalEntry}>
+                        <Text style={styles.buttonText}>💾 Save Entry</Text>
+                    </TouchableOpacity>
 
-            {/* List of Entries */}
-            <Text style={styles.entriesTitle}>Your Entries</Text>
-
-            <FlatList
-                data={entries}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <View style={styles.entryItem}>
-                        <Text style={styles.entryDate}>{item.date}</Text>
-                        <Text style={styles.entryText}>{item.text}</Text>
-                        <TouchableOpacity
-                            style={styles.deleteButton}
-                            onPress={() => deleteEntry(item.id)}
-                        >
-                            <Text style={styles.deleteButtonText}>🗑️</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-                ListEmptyComponent={
-                    <Text style={styles.emptyText}>No entries yet. Start writing above.</Text>
-                }
-            />
+                    <FlatList
+                        data={journalEntries}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item, index }) => (
+                            <View style={styles.entryItem}>
+                                <Text style={styles.entryDate}>{item.date}</Text>
+                                {editingIndex === index ? (
+                                    <TextInput
+                                        style={styles.editInput}
+                                        value={editText}
+                                        onChangeText={setEditText}
+                                        multiline
+                                    />
+                                ) : (
+                                    <Text style={styles.entryText}>{item.text}</Text>
+                                )}
+                                <View style={styles.entryActions}>
+                                    {editingIndex === index ? (
+                                        <View style={styles.editActionsRow}>
+                                            <TouchableOpacity style={styles.saveEditButton} onPress={saveEdit}>
+                                                <Text style={styles.saveEditText}>💾 Save</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity style={styles.cancelEditButton} onPress={() => setEditingIndex(null)}>
+                                                <Text style={styles.cancelEditText}>Cancel</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    ) : (
+                                        <View style={styles.normalActions}>
+                                            <TouchableOpacity onPress={() => startEditing(index)}>
+                                                <Text style={styles.editIcon}>✏️</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity onPress={() => deleteJournalEntry(item.id)}>
+                                                <Text style={styles.deleteIcon}>🗑️</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    )}
+                                </View>
+                            </View>
+                        )}
+                        ListEmptyComponent={<Text style={styles.emptyText}>No entries yet. Start writing above.</Text>}
+                    />
+                </View>
+            ) : (
+                <View style={styles.content}>
+                    <Text style={styles.sectionTitle}>Relapse History</Text>
+                    <FlatList
+                        data={relapseHistory}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => (
+                            <View style={styles.relapseItem}>
+                                <Text style={styles.relapseDate}>{item.date}</Text>
+                                <Text style={styles.relapseNote}>{item.note}</Text>
+                            </View>
+                        )}
+                        ListEmptyComponent={<Text style={styles.emptyText}>No relapses logged yet.</Text>}
+                    />
+                </View>
+            )}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#0f0f0f',
-        padding: 20,
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#ffffff',
-        marginTop: 50,
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#aaaaaa',
-        marginBottom: 20,
-    },
-    input: {
-        backgroundColor: '#1f1f1f',
-        color: '#ffffff',
-        padding: 15,
-        borderRadius: 12,
-        minHeight: 100,
-        textAlignVertical: 'top',
-        marginBottom: 12,
-    },
-    saveButton: {
-        backgroundColor: '#4CAF50',
-        padding: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-        marginBottom: 25,
-    },
-    saveButtonText: {
-        color: '#ffffff',
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    entriesTitle: {
-        fontSize: 20,
-        color: '#ffffff',
-        fontWeight: 'bold',
-        marginBottom: 15,
-    },
-    entryItem: {
-        backgroundColor: '#1a1a1a',
-        padding: 15,
-        borderRadius: 12,
-        marginBottom: 12,
-    },
-    entryDate: {
-        color: '#4CAF50',
-        fontSize: 14,
-        marginBottom: 6,
-    },
-    entryText: {
-        color: '#ffffff',
-        fontSize: 16,
-        lineHeight: 22,
-    },
-    deleteButton: {
-        position: 'absolute',
-        right: 15,
-        top: 15,
-    },
-    deleteButtonText: {
-        fontSize: 20,
-    },
-    emptyText: {
-        color: '#666666',
-        textAlign: 'center',
-        marginTop: 40,
-    },
+    container: { flex: 1, backgroundColor: theme.colors.background, padding: 20 },
+    title: { ...theme.fonts.title, color: theme.colors.text, marginTop: 50, marginBottom: 20 },
+    tabContainer: { flexDirection: 'row', marginBottom: 20, backgroundColor: theme.colors.card, borderRadius: 12, padding: 4 },
+    tabButton: { flex: 1, padding: 12, alignItems: 'center', borderRadius: 10 },
+    activeTab: { backgroundColor: theme.colors.primary },
+    tabText: { color: theme.colors.textSecondary },
+    activeTabText: { color: '#ffffff', fontWeight: 'bold' },
+    content: { flex: 1 },
+    input: { backgroundColor: theme.colors.card, color: theme.colors.text, padding: 15, borderRadius: 12, minHeight: 100, marginBottom: 12 },
+    saveButton: { backgroundColor: theme.colors.primary, padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 20 },
+    buttonText: { color: '#ffffff', fontWeight: 'bold' },
+    sectionTitle: { fontSize: 22, color: theme.colors.text, marginBottom: 15 },
+    entryItem: { backgroundColor: theme.colors.card, padding: 15, borderRadius: 12, marginBottom: 12 },
+    entryDate: { color: theme.colors.primary, fontSize: 14 },
+    entryText: { color: theme.colors.text, fontSize: 16, marginTop: 6 },
+    editInput: { backgroundColor: '#1f1f1f', color: theme.colors.text, padding: 12, borderRadius: 10, minHeight: 80, marginVertical: 8 },
+    normalActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 },
+    editIcon: { fontSize: 22, marginRight: 20, color: '#4CAF50' },
+    deleteIcon: { fontSize: 22, color: theme.colors.danger },
+    editActionsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
+    saveEditButton: { backgroundColor: theme.colors.primary, paddingVertical: 10, paddingHorizontal: 24, borderRadius: 10, flex: 1, marginRight: 10, alignItems: 'center' },
+    cancelEditButton: { backgroundColor: '#555', paddingVertical: 10, paddingHorizontal: 24, borderRadius: 10, flex: 1, alignItems: 'center' },
+    saveEditText: { color: '#ffffff', fontWeight: 'bold' },
+    cancelEditText: { color: '#ffffff', fontWeight: 'bold' },
+    relapseItem: { backgroundColor: theme.colors.card, padding: 15, borderRadius: 12, marginBottom: 12 },
+    relapseDate: { color: theme.colors.primary, fontSize: 14 },
+    relapseNote: { color: theme.colors.text, marginTop: 6 },
+    emptyText: { color: theme.colors.textTertiary, textAlign: 'center', marginTop: 50 },
 });

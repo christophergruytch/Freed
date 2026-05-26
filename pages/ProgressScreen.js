@@ -1,40 +1,48 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { theme } from '../theme';
 
-export default function ProgressScreen() {
-    // now we will use placeholder numbers
-    // later we will connect actual data
-    const currentStreak = 7;
-    const daysFree = 14;
+export default function ProgressScreen({ streak, freedomStartDate }) {
+    // Calculate days free from the start date
+    const calculateDaysFree = () => {
+        if (!freedomStartDate) return 0;
+        const now = new Date();
+        const start = new Date(freedomStartDate);
+        return Math.floor((now - start) / (1000 * 60 * 60 * 24));
+    };
+
+    const daysFree = calculateDaysFree();
     const longestStreak = 21;
     const totalEntries = 12;
 
-
     return (
         <ScrollView style={styles.container}>
-            <Text style={styles.title}>Your Progress</Text>
+            <Text style={styles.title}>📊 Your Progress</Text>
 
             <View style={styles.statsContainer}>
                 <View style={styles.statBox}>
-                    <Text style={styles.statNumber}>{currentStreak}</Text>
+                    <Text style={styles.statNumber}>{streak}</Text>
                     <Text style={styles.statLabel}>Current Streak</Text>
                 </View>
+
                 <View style={styles.statBox}>
                     <Text style={styles.statNumber}>{daysFree}</Text>
                     <Text style={styles.statLabel}>Days Free</Text>
                 </View>
+
                 <View style={styles.statBox}>
                     <Text style={styles.statNumber}>{longestStreak}</Text>
                     <Text style={styles.statLabel}>Longest Streak</Text>
                 </View>
+
                 <View style={styles.statBox}>
                     <Text style={styles.statNumber}>{totalEntries}</Text>
-                    <Text style={styles.statLabel}>Total Journal Entries</Text>
+                    <Text style={styles.statLabel}>Journal Entries</Text>
                 </View>
             </View>
 
             <Text style={styles.motivation}>
-                You're making progress. Every day and every moment you choose to fight back matters.
+                You're making real progress. Every day you choose freedom matters.
             </Text>
         </ScrollView>
     );
@@ -43,13 +51,12 @@ export default function ProgressScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0f0f0f',
-        padding: 20,
+        backgroundColor: theme.colors.background,
+        padding: theme.spacing.padding,
     },
     title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#ffffff',
+        ...theme.fonts.title,
+        color: theme.colors.text,
         textAlign: 'center',
         marginTop: 50,
         marginBottom: 30,
@@ -60,25 +67,25 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     statBox: {
-        backgroundColor: '#1a1a1a',
+        backgroundColor: theme.colors.card,
         width: '48%',
         padding: 20,
-        borderRadius: 16,
+        borderRadius: theme.spacing.radius,
         marginBottom: 16,
         alignItems: 'center',
     },
     statNumber: {
         fontSize: 36,
         fontWeight: 'bold',
-        color: '#4CAF50',
+        color: theme.colors.primary,
     },
     statLabel: {
-        color: '#aaaaaa',
+        color: theme.colors.textSecondary,
         marginTop: 8,
         textAlign: 'center',
     },
     motivation: {
-        color: '#aaaaaa',
+        color: theme.colors.textSecondary,
         textAlign: 'center',
         fontSize: 16,
         marginTop: 40,

@@ -1,21 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { theme } from '../theme';
 
-export default function CheckInScreen() {
-    const [streak, setStreak] = useState(7);
-    const [lastCheckIn, setLastCheckIn] = useState(new Date().toDateString());
-
+export default function CheckInScreen({ streak, setStreak }) {
     const handleCheckIn = () => {
-        const today = new Date().toDateString();
-
-        if (lastCheckIn === today) {
-            Alert.alert("Already Checked In", "You've already checked in today. Great job staying consistent!");
-            return;
-        }
-
         const newStreak = streak + 1;
         setStreak(newStreak);
-        setLastCheckIn(today);
 
         Alert.alert(
             "You're Doing It!",
@@ -40,27 +30,26 @@ export default function CheckInScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0f0f0f',
-        padding: 20,
+        backgroundColor: theme.colors.background,
+        padding: theme.spacing.padding,
         alignItems: 'center',
         justifyContent: 'center',
     },
     title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#ffffff',
+        ...theme.fonts.title,
+        color: theme.colors.text,
         marginBottom: 10,
     },
     subtitle: {
-        fontSize: 18,
-        color: '#aaaaaa',
+        ...theme.fonts.subtitle,
+        color: theme.colors.textSecondary,
         textAlign: 'center',
         marginBottom: 40,
     },
     checkinButton: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: theme.colors.primary,
         padding: 20,
-        borderRadius: 16,
+        borderRadius: theme.spacing.radius,
         width: '90%',
         alignItems: 'center',
         marginBottom: 30,
@@ -72,7 +61,7 @@ const styles = StyleSheet.create({
     },
     currentStreak: {
         fontSize: 20,
-        color: '#4CAF50',
+        color: theme.colors.primary,
         fontWeight: 'bold',
     },
 });
