@@ -1,13 +1,21 @@
+// pages/SettingsScreen.js
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Switch, Alert, Keyboard } from 'react-native';
 import { theme } from '../theme';
+import useStore from '../store/useStore';
+import ScreenContainer from '../components/ScreenContainer';
 
-export default function SettingsScreen({
-    freedomStartDate,
-    setFreedomStartDate,
-    isFaithBased,
-    setIsFaithBased
-}) {
+export default function SettingsScreen() {
+    const {
+        freedomStartDate,
+        setFreedomStartDate,
+        isFaithBased,
+        setIsFaithBased,
+        relapseHistory,
+        setRelapseHistory,
+        hasCompletedOnboarding,
+        setHasCompletedOnboarding
+    } = useStore();
     const [nickname, setNickname] = useState('');
 
     const saveNickname = () => {
@@ -36,39 +44,106 @@ export default function SettingsScreen({
         );
     };
 
+    const clearRelapseHistory = () => {
+        const count = relapseHistory.length;
+
+        if (count === 0) {
+            Alert.alert("Nothing to Clear", "You have no relapse history to delete.");
+            return;
+        }
+
+        Alert.alert(
+            "Clear All Relapse History?",
+            `This will permanently delete all ${count} logged relapse${count === 1 ? '' : 's'}. This action cannot be undone.`,
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete All",
+                    style: "destructive",
+                    onPress: () => {
+                        setRelapseHistory([]);
+                        Alert.alert("History Cleared", "All relapse records have been deleted.");
+                    }
+                }
+            ]
+        );
+    };
+
+    const resetOnboarding = () => {
+        Alert.alert(
+            "Restart Onboarding?",
+            "This will take you back to the welcome screen on next launch. Your data will be kept.",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Restart",
+                    style: "destructive",
+                    onPress: () => {
+                        setHasCompletedOnboarding(false);
+                        Alert.alert("Onboarding Reset", "The onboarding screen will appear the next time you open the app.");
+                    }
+                }
+            ]
+        );
+    };
+
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>⚙️ Settings</Text>
+        <View 
+            style={styles.container} 
+            onTouchStart={() => Keyboard.dismiss()}
+        >
+            <ScreenContainer backgroundColor={theme.colors.background}>
+                <Text style={styles.title}>⚙️ Settings</Text>
 
-            <Text style={styles.sectionTitle}>Your Private Space</Text>
+                <Text style={styles.sectionTitle}>Your Private Space</Text>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Choose a nickname"
-                value={nickname}
-                onChangeText={setNickname}
-            />
-
-            <TouchableOpacity style={styles.saveButton} onPress={saveNickname}>
-                <Text style={styles.buttonText}>Save Nickname</Text>
-            </TouchableOpacity>
-
-            <Text style={styles.sectionTitle}>Timer Controls</Text>
-
-            <TouchableOpacity style={styles.resetButton} onPress={resetTimer}>
-                <Text style={styles.resetButtonText}>Reset Freedom Timer</Text>
-            </TouchableOpacity>
-
-            <Text style={styles.sectionTitle}>Content Preferences</Text>
-
-            <View style={styles.toggleRow}>
-                <Text style={styles.toggleLabel}>Faith-Based Encouragement</Text>
-                <Switch
-                    value={isFaithBased}
-                    onValueChange={setIsFaithBased}
-                    trackColor={{ false: '#767577', true: theme.colors.primary }}
+                <TextInput
+                    style={styles.input}
+                    placeholder="Choose a nickname"
+                    value={nickname}
+                    onChangeText={setNickname}
                 />
-            </View>
+
+                <TouchableOpacity style={styles.saveButton} onPress={saveNickname}>
+                    <Text style={styles.buttonText}>Save Nickname</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.sectionTitle}>Timer Controls</Text>
+
+                <TouchableOpacity style={styles.resetButton} onPress={resetTimer}>
+                    <Text style={styles.resetButtonText}>Reset Freedom Timer</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.sectionTitle}>Content Preferences</Text>
+
+                <View style={styles.toggleRow}>
+                    <Text style={styles.toggleLabel}>Faith-Based Encouragement</Text>
+                    <Switch
+                        value={isFaithBased}
+                        onValueChange={setIsFaithBased}
+                        trackColor={{ false: '#767577', true: theme.colors.primary }}
+                    />
+                </View>
+
+                <Text style={styles.sectionTitle}>Data Management</Text>
+
+                <View style={styles.dataSection}>
+                    <Text style={styles.relapseCount}>
+                        {relapseHistory.length} relapse{relapseHistory.length === 1 ? '' : 's'} logged
+                    </Text>
+
+                    <TouchableOpacity style={styles.dangerButton} onPress={clearRelapseHistory}>
+                        <Text style={styles.dangerButtonText}>Clear Relapse History</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        style={[styles.dangerButton, { marginTop: 12, backgroundColor: '#555' }]} 
+                        onPress={resetOnboarding}
+                    >
+                        <Text style={styles.dangerButtonText}>Restart Onboarding</Text>
+                    </TouchableOpacity>
+                </View>
+            </ScreenContainer>
         </View>
     );
 }
@@ -132,5 +207,27 @@ const styles = StyleSheet.create({
     toggleLabel: {
         color: theme.colors.text,
         fontSize: 16,
+    },
+    dataSection: {
+        backgroundColor: theme.colors.card,
+        padding: 20,
+        borderRadius: theme.spacing.radius,
+        marginBottom: 20,
+    },
+    relapseCount: {
+        color: theme.colors.textSecondary,
+        fontSize: 15,
+        marginBottom: 16,
+        textAlign: 'center',
+    },
+    dangerButton: {
+        backgroundColor: theme.colors.danger,
+        padding: 16,
+        borderRadius: theme.spacing.radius,
+        alignItems: 'center',
+    },
+    dangerButtonText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
     },
 });

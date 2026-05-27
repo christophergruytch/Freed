@@ -1,53 +1,58 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const useStore = create((set, get) => ({
-    // State
-    streak: 0,
-    freedomStartDate: null,
-    relapseHistory: [],
-    isFaithBased: true,
+const useStore = create(
+    persist(
+        (set) => ({
+            // State
+            streak: 0,
+            freedomStartDate: null, // Stored as Date in memory, serialized to ISO string
+            relapseHistory: [],
+            isFaithBased: true,
+            hasCompletedOnboarding: false,
 
-    // Actions
-    setStreak: (newStreak) => set({ streak: newStreak }),
+            // Actions
+            setStreak: (newStreak) => set({ streak: newStreak }),
 
-    setFreedomStartDate: (date) => set({ freedomStartDate: date }),
+            setFreedomStartDate: (date) => set({ freedomStartDate: date }),
 
-    setRelapseHistory: (history) => set({ relapseHistory: history }),
+            setRelapseHistory: (history) => set({ relapseHistory: history }),
 
-    setIsFaithBased: (value) => set({ isFaithBased: value }),
+            // Convenience method for adding a new rich relapse (newest first)
+            addRelapse: (newRelapse) =>
+                set((state) => ({
+                    relapseHistory: [newRelapse, ...state.relapseHistory],
+                })),
 
-    // Load all data
-    loadAllData: async () => {
-        try {
-            const savedStreak = await AsyncStorage.getItem('streak');
-            const savedFreedomStart = await AsyncStorage.getItem('freedomStartDate');
-            const savedRelapses = await AsyncStorage.getItem('relapseHistory');
-            const savedFaith = await AsyncStorage.getItem('isFaithBased');
+            setIsFaithBased: (value) => set({ isFaithBased: value }),
 
-            if (savedStreak) set({ streak: parseInt(savedStreak) });
-            if (savedFreedomStart) set({ freedomStartDate: new Date(savedFreedomStart) });
-            if (savedRelapses) set({ relapseHistory: JSON.parse(savedRelapses) });
-            if (savedFaith !== null) set({ isFaithBased: savedFaith === 'true' });
-        } catch (e) {
-            console.log("Failed to load data", e);
+            setHasCompletedOnboarding: (value) => set({ hasCompletedOnboarding: value }),
+        }),
+        {
+            name: 'freed-app-storage',
+            storage: createJSONStorage(() => AsyncStorage),
+
+            // Only persist the fields we care about
+            partialize: (state) => ({
+                streak: state.streak,
+                // Convert Date to ISO string for safe serialization
+                freedomStartDate: state.freedomStartDate
+                    ? state.freedomStartDate.toISOString()
+                    : null,
+                relapseHistory: state.relapseHistory,
+                isFaithBased: state.isFaithBased,
+                hasCompletedOnboarding: state.hasCompletedOnboarding,
+            }),
+
+            // Convert the ISO string back to a real Date object after loading
+            onRehydrateStorage: () => (state) => {
+                if (state?.freedomStartDate) {
+                    state.freedomStartDate = new Date(state.freedomStartDate);
+                }
+            },
         }
-    },
-
-    // Save all data
-    saveAllData: async () => {
-        try {
-            const state = get();
-            await AsyncStorage.setItem('streak', state.streak.toString());
-            if (state.freedomStartDate) {
-                await AsyncStorage.setItem('freedomStartDate', state.freedomStartDate.toISOString());
-            }
-            await AsyncStorage.setItem('relapseHistory', JSON.stringify(state.relapseHistory));
-            await AsyncStorage.setItem('isFaithBased', state.isFaithBased.toString());
-        } catch (e) {
-            console.log("Failed to save data", e);
-        }
-    },
-}));
+    )
+);
 
 export default useStore;

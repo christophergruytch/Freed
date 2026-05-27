@@ -1,11 +1,23 @@
+// CheckInScreen.js
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Keyboard } from 'react-native';
 import { theme } from '../theme';
+import useStore from '../store/useStore';
+import ScreenContainer from '../components/ScreenContainer';
 
-export default function CheckInScreen({ streak, setStreak }) {
+export default function CheckInScreen() {
+    const { streak, setStreak, freedomStartDate, setFreedomStartDate } = useStore();
+
     const handleCheckIn = () => {
+        const today = new Date();
         const newStreak = streak + 1;
+
         setStreak(newStreak);
+
+        // Also update freedom start date if needed
+        if (!freedomStartDate) {
+            setFreedomStartDate(today);
+        }
 
         Alert.alert(
             "You're Doing It!",
@@ -14,15 +26,22 @@ export default function CheckInScreen({ streak, setStreak }) {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Daily Check-In</Text>
-            <Text style={styles.subtitle}>Did you choose freedom today?</Text>
+        <View 
+            style={styles.container} 
+            onTouchStart={() => Keyboard.dismiss()}
+        >
+            <ScreenContainer scrollable={false} backgroundColor={theme.colors.background}>
+                <View style={styles.centeredContent}>
+                    <Text style={styles.title}>Daily Check-In</Text>
+                    <Text style={styles.subtitle}>Did you choose freedom today?</Text>
 
-            <TouchableOpacity style={styles.checkinButton} onPress={handleCheckIn}>
-                <Text style={styles.buttonText}>✅ I Chose Freedom Today</Text>
-            </TouchableOpacity>
+                    <TouchableOpacity style={styles.checkinButton} onPress={handleCheckIn}>
+                        <Text style={styles.buttonText}>✅ I Chose Freedom Today</Text>
+                    </TouchableOpacity>
 
-            <Text style={styles.currentStreak}>Current Streak: {streak} days</Text>
+                    <Text style={styles.currentStreak}>Current Streak: {streak} days</Text>
+                </View>
+            </ScreenContainer>
         </View>
     );
 }
@@ -63,5 +82,10 @@ const styles = StyleSheet.create({
         fontSize: 20,
         color: theme.colors.primary,
         fontWeight: 'bold',
+    },
+    centeredContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });

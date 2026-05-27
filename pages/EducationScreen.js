@@ -1,26 +1,32 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Keyboard } from 'react-native';
 import { theme } from '../theme';
+import ScreenContainer from '../components/ScreenContainer';
 
 export default function EducationScreen() {
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.title}>Understanding the Trap</Text>
+        <View 
+            style={styles.container} 
+            onTouchStart={() => Keyboard.dismiss()}
+        >
+            <ScreenContainer backgroundColor={theme.colors.background}>
+                <Text style={styles.title}>Understanding the Trap</Text>
 
-            <Text style={styles.sectionTitle}>How Porn Addiction Develops</Text>
-            <Text style={styles.bodyText}>
-                It often starts from curiosity or stress relief and slowly rewires the brain's reward system. Over time, it can affect focus, relationships, and self-worth.
-            </Text>
+                <Text style={styles.sectionTitle}>How Porn Addiction Develops</Text>
+                <Text style={styles.bodyText}>
+                    It often starts from curiosity or stress relief and slowly rewires the brain's reward system. Over time, it can affect focus, relationships, and self-worth.
+                </Text>
 
-            <Text style={styles.sectionTitle}>The Path to Freedom</Text>
-            <Text style={styles.bodyText}>
-                Most people who succeed focus on progress, not perfection. They build new habits, understand their triggers, and are kind to themselves when they slip.
-            </Text>
+                <Text style={styles.sectionTitle}>The Path to Freedom</Text>
+                <Text style={styles.bodyText}>
+                    Most people who succeed focus on progress, not perfection. They build new habits, understand their triggers, and are kind to themselves when they slip.
+                </Text>
 
-            <Text style={styles.motivation}>
-                You are not alone. Recovery is possible. One day at a time.
-            </Text>
-        </ScrollView>
+                <Text style={styles.motivation}>
+                    You are not alone. Recovery is possible. One day at a time.
+                </Text>
+            </ScreenContainer>
+        </View>
     );
 }
 

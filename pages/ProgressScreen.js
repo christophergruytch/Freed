@@ -1,8 +1,13 @@
+// pages/ProgressScreen.js
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Keyboard } from 'react-native';
 import { theme } from '../theme';
+import useStore from '../store/useStore';
+import ScreenContainer from '../components/ScreenContainer';
 
-export default function ProgressScreen({ streak, freedomStartDate }) {
+export default function ProgressScreen() {
+    const { streak, freedomStartDate } = useStore();
+
     // Calculate days free from the start date
     const calculateDaysFree = () => {
         if (!freedomStartDate) return 0;
@@ -12,39 +17,43 @@ export default function ProgressScreen({ streak, freedomStartDate }) {
     };
 
     const daysFree = calculateDaysFree();
-    const longestStreak = 21;
-    const totalEntries = 12;
+    // TODO: Later we'll calculate real longest streak from history
 
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.title}>📊 Your Progress</Text>
+        <View 
+            style={styles.container} 
+            onTouchStart={() => Keyboard.dismiss()}
+        >
+            <ScreenContainer backgroundColor={theme.colors.background}>
+                <Text style={styles.title}>📊 Your Progress</Text>
 
-            <View style={styles.statsContainer}>
-                <View style={styles.statBox}>
-                    <Text style={styles.statNumber}>{streak}</Text>
-                    <Text style={styles.statLabel}>Current Streak</Text>
+                <View style={styles.statsContainer}>
+                    <View style={styles.statBox}>
+                        <Text style={styles.statNumber}>{streak}</Text>
+                        <Text style={styles.statLabel}>Current Streak</Text>
+                    </View>
+
+                    <View style={styles.statBox}>
+                        <Text style={styles.statNumber}>{daysFree}</Text>
+                        <Text style={styles.statLabel}>Days Free</Text>
+                    </View>
+
+                    <View style={styles.statBox}>
+                        <Text style={styles.statNumber}>21</Text>
+                        <Text style={styles.statLabel}>Longest Streak</Text>
+                    </View>
+
+                    <View style={styles.statBox}>
+                        <Text style={styles.statNumber}>12</Text>
+                        <Text style={styles.statLabel}>Journal Entries</Text>
+                    </View>
                 </View>
 
-                <View style={styles.statBox}>
-                    <Text style={styles.statNumber}>{daysFree}</Text>
-                    <Text style={styles.statLabel}>Days Free</Text>
-                </View>
-
-                <View style={styles.statBox}>
-                    <Text style={styles.statNumber}>{longestStreak}</Text>
-                    <Text style={styles.statLabel}>Longest Streak</Text>
-                </View>
-
-                <View style={styles.statBox}>
-                    <Text style={styles.statNumber}>{totalEntries}</Text>
-                    <Text style={styles.statLabel}>Journal Entries</Text>
-                </View>
-            </View>
-
-            <Text style={styles.motivation}>
-                You're making real progress. Every day you choose freedom matters.
-            </Text>
-        </ScrollView>
+                <Text style={styles.motivation}>
+                    You're making real progress. Every day you choose freedom matters.
+                </Text>
+            </ScreenContainer>
+        </View>
     );
 }
 

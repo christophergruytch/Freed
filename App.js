@@ -1,9 +1,11 @@
 // App.js
-import React, { useEffect } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+
 import useStore from './store/useStore';
 
+import OnboardingScreen from './pages/OnboardingScreen';
 import HomeScreen from './pages/HomeScreen';
 import CheckInScreen from './pages/CheckInScreen';
 import JournalScreen from './pages/JournalScreen';
@@ -14,12 +16,11 @@ import EducationScreen from './pages/EducationScreen';
 const Tab = createBottomTabNavigator();
 
 export default function App() {
-  const loadAllData = useStore((state) => state.loadAllData);
+  const { hasCompletedOnboarding } = useStore();
 
-  // Load data once when app starts
-  useEffect(() => {
-    loadAllData();
-  }, []);
+  if (!hasCompletedOnboarding) {
+    return <OnboardingScreen />;
+  }
 
   return (
     <NavigationContainer>
