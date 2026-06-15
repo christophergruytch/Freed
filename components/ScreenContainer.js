@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, View, Keyboard } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /**

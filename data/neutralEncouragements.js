@@ -2,12 +2,12 @@
 // Feel free to add, edit, or remove messages. Random one is picked on each load / toggle.
 
 const neutralEncouragements = [
-    "One day at a time. You're getting Free'd.",
+    "It’s okay to feel the pull. What matters is what you do next. You have the strength to choose freedom right now.",
     "Progress over perfection. Keep going.",
-    "You are stronger than the trap.",
-    "Every small choice matters.",
-    "Freedom is worth the fight.",
-    "You've come this far. Don't stop now.",
+    "Every time you pause and reflect instead of acting on an urge, you’re rewiring your brain towards being free.",
+    "Progress isn’t perfect — it’s showing up again today. Be kind to yourself. You’re doing better than you think.",
+    "Temptation doesn’t define you. Taking a breath and choosing differently is real strength. You’re not alone in this.",
+    "You've come so far, there's no reason to stop now.",
 ];
 
 export default neutralEncouragements;
