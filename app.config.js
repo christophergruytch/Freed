@@ -17,9 +17,15 @@ module.exports = {
     ...base.ios,
     bundleIdentifier,
     displayName: appName,
+    infoPlist: {
+      ...(base.ios && base.ios.infoPlist ? base.ios.infoPlist : {}),
+      CFBundleDisplayName: appName,
+      CFBundleName: appName,
+    },
   },
   android: {
     ...base.android,
     package: bundleIdentifier,
+    label: appName,
   },
 };
