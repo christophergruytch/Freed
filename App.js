@@ -3,21 +3,17 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { AppState, View, TouchableOpacity } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSpring,
-} from 'react-native-reanimated';
+
 
 import useStore from './store/useStore';
 import DailyCheckInModal from './components/DailyCheckInModal';
 import CustomTabBar from './components/CustomTabBar';
 import { 
   requestNotificationPermissions, 
-  scheduleDailyReminder 
+  scheduleReminders 
 } from './services/notifications';
 
 import OnboardingScreen from './pages/OnboardingScreen';
@@ -33,37 +29,12 @@ import { theme } from './theme';
 
 const Tab = createBottomTabNavigator();
 
-// Small animated overlay wrapper for premium Settings entrance (Reanimated)
+// Simple non-animated full-screen wrapper for Settings (no Reanimated animation per request)
 function SettingsOverlay({ onClose }) {
-  const opacity = useSharedValue(0);
-  const scale = useSharedValue(0.96);
-
-  const backdropStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
-
-  const contentStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ scale: scale.value }],
-  }));
-
-  React.useEffect(() => {
-    opacity.value = withTiming(1, { duration: 180 });
-    scale.value = withSpring(1, { damping: 18, stiffness: 140 });
-  }, []);
-
-  const handleClose = () => {
-    opacity.value = withTiming(0, { duration: 140 });
-    scale.value = withTiming(0.97, { duration: 140 });
-    setTimeout(onClose, 160);
-  };
-
   return (
-    <Animated.View style={[{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#000' }, backdropStyle]}>
-      <Animated.View style={[{ flex: 1 }, contentStyle]}>
-        <SettingsScreen onClose={handleClose} />
-      </Animated.View>
-    </Animated.View>
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.colors.background }}>
+      <SettingsScreen onClose={onClose} />
+    </View>
   );
 }
 
@@ -93,21 +64,28 @@ export default function App() {
       // Check on initial mount
       checkForNewDay();
 
-      // Request notification permissions and schedule based on user settings
+      // Request notification permissions and schedule based on user settings + data
       const setupNotifications = async () => {
         const hasPermission = await requestNotificationPermissions();
         
         if (hasPermission) {
+          const state = useStore.getState();
           const { 
             notificationsEnabled = true, 
             notificationTime = '20:00', 
-            customNotificationMessage = '' 
-          } = useStore.getState();
+            customNotificationMessage = '',
+            quietHours,
+            notificationTypes,
+            relapseHistory = [],
+          } = state;
           
-          await scheduleDailyReminder({
+          await scheduleReminders({
             enabled: notificationsEnabled,
-            time: notificationTime,
+            dailyTime: notificationTime,
             customMessage: customNotificationMessage,
+            types: notificationTypes || { daily: true, streak: true, journal: true, motivational: true },
+            quietHours: quietHours || { enabled: false, start: '22:00', end: '07:00' },
+            relapseHistory,
           });
         } else {
           console.log("Notification permissions not granted.");
@@ -115,14 +93,27 @@ export default function App() {
       };
       setupNotifications();
 
+      // Handle notification taps for deep linking (e.g. open Journal)
+      const notificationSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+        const data = response.notification.request.content.data || {};
+        if (data.screen === 'Journal') {
+          console.log('User tapped journal notification - open Journal tab');
+        }
+        console.log('Notification tapped with data:', data);
+      });
+
       // Also check when app comes back to foreground
       const subscription = AppState.addEventListener('change', (nextAppState) => {
         if (nextAppState === 'active') {
           checkForNewDay();
+          setupNotifications();
         }
       });
 
-      return () => subscription.remove();
+      return () => {
+        subscription.remove();
+        if (notificationSubscription) notificationSubscription.remove();
+      };
     }
   }, [hasCompletedOnboarding, activeDays]);
 
@@ -147,7 +138,6 @@ export default function App() {
             <Tab.Screen 
               name="Home" 
               children={() => <HomeScreen 
-                onOpenSettings={() => setShowSettings(true)} 
                 onOpenTemptation={() => setShowTemptation(true)} 
                 onOpenProfile={() => setShowProfile(true)} 
               />} 

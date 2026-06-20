@@ -1,6 +1,7 @@
 // pages/CommunityScreen.js
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, TextInput, Linking, Keyboard, TouchableWithoutFeedback, Platform } from 'react-native';
+import { scheduleReminders } from '../services/notifications';
 import { theme } from '../theme';
 import ScreenContainer from '../components/ScreenContainer';
 import useStore from '../store/useStore';
@@ -62,7 +63,7 @@ export default function CommunityScreen() {
     ];
 
     // Simple protect recommendations based on store data (reuses insights logic)
-    const { relapseHistory, temptationReflections } = useStore();
+    const { relapseHistory, temptationReflections, addProtectSchedule } = useStore();
 
     const getProtectRecommendation = () => {
         if (!relapseHistory || relapseHistory.length === 0) {
@@ -102,11 +103,28 @@ export default function CommunityScreen() {
 
     const saveProtectionRec = () => {
         const rec = getProtectRecommendation();
+        const newSchedule = {
+            recommendation: rec,
+            savedAt: new Date().toISOString(),
+            // Simple high risk time suggestion
+            suggestedTime: '20:00',
+        };
+        addProtectSchedule(newSchedule);
+
+        // Wire to notifications: schedule a protective nudge (respecting limits in service)
+        scheduleReminders({
+            enabled: true,
+            dailyTime: '20:00',
+            customMessage: `Protect yourself: ${rec.slice(0, 80)}`,
+            types: { daily: false, streak: false, journal: false, motivational: true },
+            quietHours: { enabled: false, start: '22:00', end: '07:00' },
+            relapseHistory,
+        }).catch(() => {});
+
         Alert.alert(
             "Recommendation Saved",
-            "This suggestion is now in your history. You can review it in Insights or enable reminders in Settings. (Full persistence and scheduling coming in future updates.)"
+            "Saved to your protect list and a gentle nudge has been scheduled (if within limits)."
         );
-        // Could add to store as protectionRecs if expanded
     };
 
     // No default curated playlists (user requested removal as links were not reliable)

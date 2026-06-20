@@ -7,7 +7,7 @@ import useStore from '../store/useStore';
 import ScreenContainer from '../components/ScreenContainer';
 import Button from '../components/Button';
 import {
-    scheduleDailyReminder,
+    scheduleReminders,
     sendTestNotificationIn10Seconds,
     getNotificationPermissionStatus,
     requestNotificationPermissions
@@ -39,6 +39,10 @@ export default function SettingsScreen({ onClose }) {
         notificationsEnabled = true,
         notificationTime = '20:00',
         customNotificationMessage = '',
+        notificationTypes = { daily: true, streak: true, journal: true, motivational: true },
+        setNotificationTypes,
+        quietHours = { enabled: false, start: '22:00', end: '07:00' },
+        setQuietHours,
         setNotificationSettings,
         // Nickname
         nickname: storedNickname = '',
@@ -182,10 +186,13 @@ export default function SettingsScreen({ onClose }) {
         const latest = useStore.getState();
         
         try {
-            await scheduleDailyReminder({
+            await scheduleReminders({
                 enabled: latest.notificationsEnabled,
-                time: latest.notificationTime,
+                dailyTime: latest.notificationTime,
                 customMessage: latest.customNotificationMessage,
+                types: latest.notificationTypes || { daily: true, streak: true, journal: true, motivational: true },
+                quietHours: latest.quietHours || { enabled: false, start: '22:00', end: '07:00' },
+                relapseHistory: latest.relapseHistory || [],
             });
             return true;
         } catch (error) {
@@ -252,10 +259,13 @@ export default function SettingsScreen({ onClose }) {
                         onValueChange={(enabled) => {
                             setNotificationSettings({ notificationsEnabled: enabled });
                             // Immediately apply enable/disable using the *committed* time/message (not draft locals)
-                            scheduleDailyReminder({
+                            scheduleReminders({
                                 enabled,
-                                time: notificationTime,
+                                dailyTime: notificationTime,
                                 customMessage: customNotificationMessage,
+                                types: useStore.getState().notificationTypes || { daily: true, streak: true, journal: true, motivational: true },
+                                quietHours: useStore.getState().quietHours || { enabled: false, start: '22:00', end: '07:00' },
+                                relapseHistory: useStore.getState().relapseHistory || [],
                             });
                         }}
                         trackColor={{ false: '#767577', true: theme.colors.primary }}
@@ -277,6 +287,30 @@ export default function SettingsScreen({ onClose }) {
                             </TouchableOpacity>
 
                             <Text style={styles.helperText}>Tap to change time</Text>
+                        </View>
+
+                        {/* Notification types */}
+                        <Text style={[styles.helperText, { marginTop: 8 }]}>Smart reminders (max ~2 per day):</Text>
+                        <View style={styles.toggleRow}>
+                            <Text style={styles.toggleLabel}>Streak encouragement</Text>
+                            <Switch value={!!notificationTypes?.streak} onValueChange={(v) => setNotificationTypes({ streak: v })} trackColor={{ false: '#767577', true: theme.colors.primary }} />
+                        </View>
+                        <View style={styles.toggleRow}>
+                            <Text style={styles.toggleLabel}>Journal suggestion</Text>
+                            <Switch value={!!notificationTypes?.journal} onValueChange={(v) => setNotificationTypes({ journal: v })} trackColor={{ false: '#767577', true: theme.colors.primary }} />
+                        </View>
+                        <View style={styles.toggleRow}>
+                            <Text style={styles.toggleLabel}>Motivational</Text>
+                            <Switch value={!!notificationTypes?.motivational} onValueChange={(v) => setNotificationTypes({ motivational: v })} trackColor={{ false: '#767577', true: theme.colors.primary }} />
+                        </View>
+
+                        <View style={styles.toggleRow}>
+                            <Text style={styles.toggleLabel}>Quiet hours (silence notifications)</Text>
+                            <Switch 
+                                value={!!quietHours?.enabled} 
+                                onValueChange={(v) => setQuietHours({ ...quietHours, enabled: v })} 
+                                trackColor={{ false: '#767577', true: theme.colors.primary }} 
+                            />
                         </View>
 
                         {/* Clean native time picker modal — pulls up a proper scroll wheel */}

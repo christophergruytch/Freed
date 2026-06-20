@@ -33,6 +33,24 @@ const useStore = create(
             // Single personal note for the Learn tab (user's private motivation / reminders)
             personalNote: '',
 
+            // Quiet hours for notifications
+            quietHours: {
+                enabled: false,
+                start: '22:00', // HH:mm
+                end: '07:00',
+            },
+
+            // Enabled notification types
+            notificationTypes: {
+                daily: true,
+                streak: true,
+                journal: true,
+                motivational: true,
+            },
+
+            // Saved protect / barrier schedules
+            protectSchedules: [],
+
             // Actions
             setStreak: (newStreak) => set({ streak: newStreak }),
 
@@ -125,6 +143,20 @@ const useStore = create(
             // Personal note (Learn tab)
             setPersonalNote: (note) => set({ personalNote: (note || '').trim() }),
 
+            // Quiet hours
+            setQuietHours: (quietHours) => set({ quietHours }),
+
+            // Notification types
+            setNotificationTypes: (types) => set({ notificationTypes: { ...get().notificationTypes, ...types } }),
+
+            // Protect schedules
+            addProtectSchedule: (schedule) => set((state) => ({
+                protectSchedules: [...state.protectSchedules, { ...schedule, id: Date.now().toString() }],
+            })),
+            deleteProtectSchedule: (id) => set((state) => ({
+                protectSchedules: state.protectSchedules.filter((s) => s.id !== id),
+            })),
+
             // Calculate current consecutive streak (ending today or yesterday)
             getCurrentStreak: () => {
                 const { activeDays } = get();
@@ -184,6 +216,12 @@ const useStore = create(
                 journalEntries: state.journalEntries,
                 // User's personal note from the Learn tab
                 personalNote: state.personalNote,
+                // Quiet hours
+                quietHours: state.quietHours,
+                // Notification types
+                notificationTypes: state.notificationTypes,
+                // Protect schedules
+                protectSchedules: state.protectSchedules,
             }),
 
             // Convert the ISO string back to a real Date object after loading

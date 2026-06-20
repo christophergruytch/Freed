@@ -51,75 +51,200 @@ export async function getNotificationPermissionStatus() {
 }
 
 /**
- * Schedule the daily reminder based on user settings.
- * @param {Object} options
- * @param {boolean} options.enabled
- * @param {string} options.time - "HH:mm"
- * @param {string} options.customMessage - optional custom body
+ * Check if a time (HH:mm) falls within quiet hours.
  */
-export async function scheduleDailyReminder({ enabled, time, customMessage }) {
-  // Always cancel existing notifications first to avoid duplicates
+export function isTimeInQuietHours(time, quietHours) {
+  if (!quietHours?.enabled) return false;
+  if (!time || !quietHours.start || !quietHours.end) return false;
+
+  const [h, m] = time.split(':').map(Number);
+  const timeMinutes = h * 60 + m;
+
+  const [sh, sm] = quietHours.start.split(':').map(Number);
+  const startMinutes = sh * 60 + sm;
+
+  const [eh, em] = quietHours.end.split(':').map(Number);
+  const endMinutes = eh * 60 + em;
+
+  if (startMinutes < endMinutes) {
+    return timeMinutes >= startMinutes && timeMinutes <= endMinutes;
+  } else {
+    // overnight
+    return timeMinutes >= startMinutes || timeMinutes <= endMinutes;
+  }
+}
+
+/**
+ * Compute 1-2 smart times based on relapse data (high risk hours) or random.
+ * Returns array of {hour, minute} objects.
+ */
+function getSmartReminderTimes(relapseHistory = [], max = 2) {
+  const times = [];
+
+  // Try to derive high-risk hours from relapse timestamps
+  if (relapseHistory.length > 0) {
+    const hourCounts = {};
+    relapseHistory.forEach((r) => {
+      if (r.timestamp) {
+        const h = new Date(r.timestamp).getHours();
+        hourCounts[h] = (hourCounts[h] || 0) + 1;
+      }
+    });
+
+    const sortedHours = Object.entries(hourCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, max)
+      .map(([h]) => parseInt(h, 10));
+
+    sortedHours.forEach((h) => {
+      if (times.length < max) {
+        times.push({ hour: h, minute: Math.floor(Math.random() * 60) });
+      }
+    });
+  }
+
+  // Fill remaining with random safe times (avoid night if possible, but keep simple)
+  while (times.length < max) {
+    const h = Math.floor(Math.random() * 24);
+    // Bias away from very late night for motivational
+    const minute = Math.floor(Math.random() * 60);
+    times.push({ hour: h, minute });
+  }
+
+  return times;
+}
+
+/**
+ * Schedule all reminders (daily + smart ones).
+ * Respects quiet hours, daily limits, and notification types.
+ */
+export async function scheduleReminders({
+  enabled = true,
+  dailyTime = '20:00',
+  customMessage = '',
+  types = { daily: true, streak: true, journal: true, motivational: true },
+  quietHours = { enabled: false, start: '22:00', end: '07:00' },
+  relapseHistory = [],
+}) {
   await Notifications.cancelAllScheduledNotificationsAsync();
 
   if (!enabled) {
-    console.log("Daily reminders are disabled.");
-    return null;
+    console.log('Notifications disabled.');
+    return [];
   }
 
-  // Basic validation for time format
-  if (!time || !time.includes(':')) {
-    console.warn("Invalid notification time format. Using default 20:00.");
-    time = '20:00';
-  }
+  const scheduledIds = [];
+  let dailyScheduled = false;
 
-  const [hourStr, minuteStr] = time.split(':');
-  const hour = parseInt(hourStr, 10);
-  const minute = parseInt(minuteStr, 10);
+  // 1. Daily reminder (if enabled)
+  if (types.daily) {
+    let time = dailyTime;
+    if (!time || !time.includes(':')) time = '20:00';
 
-  if (isNaN(hour) || isNaN(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-    console.warn("Invalid hour/minute. Defaulting to 20:00");
-    return scheduleDailyReminder({ enabled: true, time: '20:00', customMessage });
-  }
+    const [hourStr, minuteStr] = time.split(':');
+    let hour = parseInt(hourStr, 10);
+    let minute = parseInt(minuteStr, 10);
 
-  const defaultBody = "Take a moment to check in with yourself. You're doing great.";
-
-  try {
-    const identifier = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Daily Check-in",
-        body: customMessage?.trim() ? customMessage.trim() : defaultBody,
-        sound: true,
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour,
-        minute,
-      },
-    });
-
-    console.log(`Daily reminder scheduled for ${time}. ID: ${identifier}`);
-    return identifier;
-  } catch (error) {
-    console.error("Failed to schedule daily reminder:", error);
-    
-    // Give more helpful error if it's a trigger format issue
-    if (error.message?.includes('trigger')) {
-      alert("Failed to schedule notification due to an internal configuration issue. Please restart the app and try again.");
-    } else {
-      alert("Failed to schedule notification. Please check your notification permissions.");
+    if (isNaN(hour) || isNaN(minute)) {
+      hour = 20; minute = 0;
     }
-    return null;
+
+    const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    if (!isTimeInQuietHours(timeStr, quietHours)) {
+      const body = customMessage?.trim() || "Take a moment to check in with yourself. You're doing great.";
+
+      try {
+        const id = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: "Free'd",
+            body,
+            sound: true,
+            data: { type: 'daily' },
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour,
+            minute,
+          },
+        });
+        scheduledIds.push(id);
+        dailyScheduled = true;
+        console.log(`Daily reminder scheduled for ${timeStr}`);
+      } catch (e) {
+        console.error('Failed daily reminder', e);
+      }
+    }
   }
+
+  // 2. Smart / additional reminders (streak, journal, motivational) - max 1-2 total
+  const smartTypes = [];
+  if (types.streak) smartTypes.push('streak');
+  if (types.journal) smartTypes.push('journal');
+  if (types.motivational) smartTypes.push('motivational');
+
+  const smartTimes = getSmartReminderTimes(relapseHistory, 2);
+
+  for (let i = 0; i < Math.min(smartTypes.length, smartTimes.length); i++) {
+    const type = smartTypes[i];
+    const { hour, minute } = smartTimes[i];
+    const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+
+    if (isTimeInQuietHours(timeStr, quietHours)) continue;
+
+    let title = "Free'd";
+    let body = "You're making progress. Keep going.";
+
+    if (type === 'streak') {
+      body = "You're building a strong streak. One day at a time.";
+    } else if (type === 'journal') {
+      body = "A quick journal entry can help process today's thoughts.";
+    } else if (type === 'motivational') {
+      // Simple variety - in real use caller can pass better, but hardcoded for now
+      const motivationalBodies = [
+        "You're stronger than the urge. Choose freedom today.",
+        "Small steps lead to big freedom. You've got this.",
+        "Every moment you choose differently builds your future self.",
+      ];
+      body = motivationalBodies[Math.floor(Math.random() * motivationalBodies.length)];
+    }
+
+    // data for deep linking
+    const data = { type, screen: type === 'journal' ? 'Journal' : null };
+
+    try {
+      const id = await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          sound: true,
+          data,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour,
+          minute,
+        },
+      });
+      scheduledIds.push(id);
+      console.log(`${type} reminder scheduled at ${timeStr}`);
+    } catch (e) {
+      console.error(`Failed to schedule ${type}`, e);
+    }
+
+    // Hard limit: never more than ~3-4 total scheduled recurring
+    if (scheduledIds.length >= 4) break;
+  }
+
+  return scheduledIds;
 }
 
 export async function cancelAllNotifications() {
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
-// For testing - sends a notification 10 seconds from now
+// For testing - sends a notification 10 seconds from now (keeps "Test" title)
 export async function sendTestNotificationIn10Seconds() {
   try {
-    // Always try to ensure we have permissions before scheduling
     const hasPermission = await requestNotificationPermissions();
     
     if (!hasPermission) {

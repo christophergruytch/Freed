@@ -289,14 +289,14 @@ export default function EducationScreen() {
                         </View>
 
                         <Text style={styles.bodyText}>
-                            For notifications, data tools, and all other settings, tap the gear icon on the Home screen.
+                            For notifications, data tools, and all other settings, open your Profile from the top-left avatar on the Home screen.
                         </Text>
 
                         <Button
                             title="Open Full Settings"
                             onPress={() => Alert.alert(
                                 "Full Settings",
-                                "Tap the gear icon in the top-left of the Home tab for notifications, data management, and more."
+                                "Open your Profile (top-left avatar on Home) then tap the settings icon for notifications, data management, and more."
                             )}
                             variant="secondary"
                         />

@@ -1,6 +1,6 @@
 // pages/HomeScreen.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -22,7 +22,7 @@ import neutralEncouragements from '../data/neutralEncouragements';
 import ScreenContainer from '../components/ScreenContainer';
 import Button from '../components/Button';
 
-export default function HomeScreen({ onOpenSettings, onOpenTemptation, onOpenProfile }) {
+export default function HomeScreen({ onOpenTemptation, onOpenProfile }) {
     const insets = useSafeAreaInsets();
 
     const {
@@ -52,12 +52,6 @@ export default function HomeScreen({ onOpenSettings, onOpenTemptation, onOpenPro
             ['#2e7d32', '#66bb6a']
         ),
         borderWidth: 2,
-    }));
-
-    // Quote fade animation
-    const quoteOpacity = useSharedValue(1);
-    const quoteFadeStyle = useAnimatedStyle(() => ({
-        opacity: quoteOpacity.value,
     }));
 
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -97,7 +91,7 @@ export default function HomeScreen({ onOpenSettings, onOpenTemptation, onOpenPro
         { label: '2+ days ago', hoursAgo: 48 },
     ];
 
-    // Helper for profile avatar initials (placeholder until custom images are added)
+    // Helper for profile avatar initials
     const getInitials = (name) => {
         if (!name || !name.trim()) return '';
         const parts = name.trim().split(/\s+/);
@@ -135,7 +129,6 @@ export default function HomeScreen({ onOpenSettings, onOpenTemptation, onOpenPro
         if (!mountedRef.current) return;
         const newQuote = pickRandomQuote();
         setMotivationalMessage(newQuote);
-        quoteOpacity.value = withTiming(1, { duration: 2000 });
     }, [isFaithBased]);
 
     useEffect(() => {
@@ -145,16 +138,12 @@ export default function HomeScreen({ onOpenSettings, onOpenTemptation, onOpenPro
         setMotivationalMessage(fresh);
     }, [isFaithBased]);
 
-    // Fading quote every 30 seconds (2s fade out + 2s fade in).
-    // Because pick uses a ref (not state) for exclusion, changeToNewQuote stays
-    // stable across rotations and the interval doesn't thrash.
+    // Quote updates every 30s (no cross-fade animation to keep things clean and avoid past Reanimated issues)
     useEffect(() => {
         const interval = setInterval(() => {
-            quoteOpacity.value = withTiming(0, { duration: 2000 }, (finished) => {
-                if (finished) {
-                    runOnJS(changeToNewQuote)();
-                }
-            });
+            if (mountedRef.current) {
+                changeToNewQuote();
+            }
         }, 30000);
 
         return () => clearInterval(interval);
@@ -170,7 +159,6 @@ export default function HomeScreen({ onOpenSettings, onOpenTemptation, onOpenPro
             scale.value = 1;
             opacity.value = 1;
             borderProgress.value = 0;
-            quoteOpacity.value = 1;
             return;
         }
 
@@ -376,6 +364,7 @@ export default function HomeScreen({ onOpenSettings, onOpenTemptation, onOpenPro
                     </TouchableOpacity>
 
                     <Text style={styles.title}>Free'd</Text>
+
                     <Text style={styles.subtitle}>Built for Hope.</Text>
 
                     <Animated.View style={[styles.timerContainer, timerBorderStyle]}>
@@ -398,9 +387,7 @@ export default function HomeScreen({ onOpenSettings, onOpenTemptation, onOpenPro
                         <Text style={styles.greeting}>Hey {nickname},</Text>
                     ) : null}
 
-                    <Animated.View style={quoteFadeStyle}>
-                        <Text style={styles.motivation}>{motivationalMessage}</Text>
-                    </Animated.View>
+                    <Text style={styles.motivation}>{motivationalMessage}</Text>
                 </View>
             </ScreenContainer>
 
@@ -613,8 +600,16 @@ export default function HomeScreen({ onOpenSettings, onOpenTemptation, onOpenPro
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background, padding: theme.spacing.padding, alignItems: 'center' },
-    title: { ...theme.fonts.title, color: theme.colors.text, textAlign: 'center', marginTop: 50 },
-    subtitle: { ...theme.fonts.subtitle, color: theme.colors.textSecondary, textAlign: 'center', marginVertical: 12 },
+    title: { 
+        ...theme.fonts.title, 
+        color: theme.colors.text, 
+        textAlign: 'center', 
+        marginTop: 50,
+        fontFamily: 'Georgia',
+        fontStyle: 'italic',
+        fontWeight: 'normal',
+    },
+    subtitle: { ...theme.fonts.subtitle, color: theme.colors.textSecondary, textAlign: 'center', marginTop: 8, marginBottom: 12 },
     timerContainer: {
         backgroundColor: theme.colors.card,
         paddingVertical: 20,

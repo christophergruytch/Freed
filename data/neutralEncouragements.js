@@ -8,6 +8,14 @@ const neutralEncouragements = [
     "Progress isn’t perfect — it’s showing up again today. Be kind to yourself. You’re doing better than you think.",
     "Temptation doesn’t define you. Taking a breath and choosing differently is real strength. You’re not alone in this.",
     "You've come so far, there's no reason to stop now.",
+    "Urges are temporary. Your commitment to freedom is what lasts.",
+    "One breath, one choice, one better moment at a time.",
+    "You are building new pathways every time you choose differently.",
+    "The fact that you're here, trying, matters more than you know.",
+    "Freedom is not the absence of temptation — it’s the power to respond differently.",
+    "Your future self is already thanking you for the choices you're making today.",
+    "Healing is not linear, but every step away from the old pattern counts.",
+    "You have survived 100% of your hardest days so far. Keep going.",
 ];
 
 export default neutralEncouragements;
